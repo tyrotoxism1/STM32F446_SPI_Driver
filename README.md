@@ -1,6 +1,6 @@
 # STM32F446_SPI_Driver
 - Simple bare-metal SPI driver written for STM32F446RE Nucleo board
-- Supports single host full-duplex synchronous SPI communication with up 1 to 5 peripherals
+- Supports single host full-duplex synchronous SPI communication with 1 to 5 peripherals
 
 ## Features 
 - Uses SPI1 of STM32F446RE Nucleo board
@@ -9,6 +9,7 @@
     - Chip select/peripheral control lines can be:
         - PB8, PB9, PA8 or PB3 
 - Supports SPI modes 0-3 shown in the table below
+
 | Mode | CPOL | CPHA |
 | ---- | ---- | ---- |
 | 0    | 0    | 0    |
