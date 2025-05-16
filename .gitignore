@@ -50,3 +50,18 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# VSCode
+.vscode/
+.pio/
+
+# Build Files
+*.elf
+*.bin
+
+# GDB
+*.gdb*
+
+# Vim
+.vim/
+
