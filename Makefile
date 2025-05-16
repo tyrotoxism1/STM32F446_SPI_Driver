@@ -2,7 +2,7 @@
 PROJ_NAME = $(shell basename $(CURDIR))
 
 # Adjust to root dir of STM32CubeF4 firmware pacakage
-STM32F4_LIB_DIR = ~/dev/embedded_dev/STM32CubeF4
+STM32F4_LIB_DIR = /home/tyrotoxism/dev/embedded_dev/STM32CubeF4
 
 CMSIS_DIR = $(STM32F4_LIB_DIR)/Drivers/CMSIS
 STARTUP_FILE = $(STM32F4_LIB_DIR)/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f446xx.s 
