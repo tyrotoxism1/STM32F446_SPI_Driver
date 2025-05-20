@@ -7,7 +7,7 @@
 - Supports 8-bit or 16-bit data frames for SPI communication
 - Only supports up to 4 peripherals for simplicity and to limit GPIO pin usage
     - Chip select/peripheral control lines can be:
-        - PB8, PB9, PA8 or PB3 
+        - PB8, PB9, PB10 or PA8
 - Supports SPI modes 0-3 shown in the table below
 
 | Mode | CPOL | CPHA |
@@ -20,6 +20,13 @@
 - Adjustable SPI clock speed based on peripheral clock APB1 (for SPI1)
 
 # SPI API 
+## Interacting with SPI object
+- SPI object is a global static variable defined in the implementation file, meaning the object
+  struct is not directly accessible
+- Users must use the functions described below to interact with the SPI object
+  to keep encapsulation
+    - Since the SPI object is global static var, there is only 1 object and the
+      user cannot create multiple SPI objects. 
 ## SPI_Init()
 - Sets up GPIO for SPI1 and necessary chip select lines if multiple peripherals
   are required
