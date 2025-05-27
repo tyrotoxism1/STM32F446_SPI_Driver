@@ -1,7 +1,16 @@
 #include "SPI.h"
 #include "stm32f446xx.h"
-#include "stm32f4xx.h"
 #include <stdint.h>
+
+struct SPI_t{
+	uint16_t Tx_buf;
+	uint16_t Rx_buf;
+	SPI_STATUS status;
+	SPI_ERROR_t error;
+};
+
+static SPI_t SPI_instance_storage = {0};
+SPI_handle spi_instance = &SPI_instance_storage; 
 
 /*
  * Functions/features to add:
@@ -15,17 +24,19 @@
  *
  * SPI1 is setup using PB3(SCK), PB4(MISO) and PB5(MOSI) pins by setting
  * each pin alternate function(AF) to AF5 for SPI1.  
- * PB8,PB9, PB10 and PBA8 are used as software controlled chip select lines
+ * PB8,PB9, PB10 and PAA8 are used as software controlled chip select lines
  * (outputs)
  */
 void SPI_GPIO_setup()
 {
-	GPIOB->MODER |= (GPIO_MODER_MODE3_1 & GPIO_MODER_MODE4_1 & GPIO_MODER_MODE5_1);
-	GPIOB->AFR[3] |= (GPIO_AFRL_AFRL3_0 & GPIO_AFRL_AFRL3_2);
-	GPIOB->AFR[4] |= (GPIO_AFRL_AFRL4_0 & GPIO_AFRL_AFRL4_2);
-	GPIOB->AFR[5] |= (GPIO_AFRL_AFRL5_0 & GPIO_AFRL_AFRL5_2);
+	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN & RCC_AHB1ENR_GPIOBEN);
+	RCC->APB2ENR |= (RCC_APB2ENR_SPI1EN);
+	GPIOB->MODER |= (GPIO_MODER_MODE3_1 | GPIO_MODER_MODE4_1 | GPIO_MODER_MODE5_1);
+	GPIOB->AFR[3] |= (GPIO_AFRL_AFRL3_0 | GPIO_AFRL_AFRL3_2);
+	GPIOB->AFR[4] |= (GPIO_AFRL_AFRL4_0 | GPIO_AFRL_AFRL4_2);
+	GPIOB->AFR[5] |= (GPIO_AFRL_AFRL5_0 | GPIO_AFRL_AFRL5_2);
 
-	GPIOB->MODER |= (GPIO_MODER_MODE8_0 & GPIO_MODER_MODE9_0 & GPIO_MODER_MODE10_0);
+	GPIOB->MODER |= (GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0 | GPIO_MODER_MODE10_0);
 	GPIOA->MODER |= (GPIO_MODER_MODE8_0); 
 }
 
@@ -91,8 +102,7 @@ void SPI_CR_setup(uint8_t transfer_speed, uint8_t mode, uint8_t dff)
 					SPI_CR1_CRCEN |
 				   	SPI_CR1_RXONLY | 
 					SPI_CR1_LSBFIRST );
-	SPI1->CR1 |= (  SPI_CR1_SSM |
-					SPI_CR1_MSTR );
+	SPI1->CR1 |= (  SPI_CR1_SSM | SPI_CR1_MSTR );
 	SPI_change_mode(mode);
 	if(dff)
 		SPI1->CR1 |= (SPI_CR1_DFF);
@@ -102,6 +112,14 @@ void SPI_CR_setup(uint8_t transfer_speed, uint8_t mode, uint8_t dff)
 	SPI1->CR1 |= (transfer_speed<<4);
 }
 
+/**
+ * SPI_init() - Configures MOSI, MISO, SCLK and chip select GPIO, then
+ * configures SPI1 control register for user specified SPI mode, number of
+ * peripherals, data frame formate of 8 or 16 and SPI SCLK speed(transfer
+ * speed)
+ *
+ * TODO: Enter param info 
+ */ 
 void SPI_init(uint8_t mode, 
 		uint8_t num_peripherals,
 	   	uint16_t data_frame_format,
@@ -110,5 +128,108 @@ void SPI_init(uint8_t mode,
 {
 	SPI_GPIO_setup();
 	SPI_CR_setup(transfer_speed, mode,data_frame_format);
+	spi_instance->status = WAITING; 
+	spi_instance->error = NO_ERR; 
+	SPI1->CR1 |= SPI_CR1_SPE;
+	//Enable SPI here?
+}
+
+
+/**
+ * SPI_deinit() - Disables all chip select lines, waits for TXE then RXNE bits
+ * in CR 
+ */
+void SPI_deinit()
+{
+	;
+}
+
+/**
+ * SPI_single_send_poll() - poll for empty Tx buffer then send a single frame of data to peripheral
+ *
+ * Sends a single frame of data. Waits for Tx buffer to be empty, then writes
+ * data to SPI1 data register(DR). Data is transferred from Tx to shift 
+ * register which is then transmitted to peripheral serially.
+ *
+ * @data: Value assigned to SPI1 DR. 
+ */
+void SPI_single_send_poll(uint16_t data)
+{
+	while( !(SPI1->SR & SPI_SR_TXE) );
+	SPI1->DR = data;
+	spi_instance->Tx_buf = data; 
+}
+
+/**
+ * SPI_single_receive_poll() - Poll for Rx buffer being full then store Value
+ *
+ */
+void SPI_single_receive_poll(void)
+{
+	while( !(SPI1->SR & SPI_SR_RXNE) );
+	spi_instance->Rx_buf = SPI1->DR;
+}
+
+/**
+ * SPI_chip_select() - Drive CS pin low for corresponding peripheral device
+ *
+ * Choose 1 of 4 GPIO pins to select a device for SPI communication. Drives
+ * high(deselects) all other GPIO pins.  
+ * @peripheral_num: Expects value from 0-3, each corresponding to a GPIO pin
+ * for chip select
+ * - 0(default) = PB8
+ * - 1 = PB9  
+ * - 2 = PB10  
+ * - 3 = PA8  
+ */ 
+void SPI_chip_select(uint8_t peripheral_num)
+{
+	if(peripheral_num==1){
+		GPIOB->ODR |= GPIO_ODR_OD8;
+		GPIOB->ODR &= ~(GPIO_ODR_OD9);
+		GPIOB->ODR |= GPIO_ODR_OD10;
+		GPIOA->ODR |= GPIO_ODR_OD8;
+	}
+	else if(peripheral_num==2){
+		GPIOB->ODR |= GPIO_ODR_OD8;
+		GPIOB->ODR |= GPIO_ODR_OD9;
+		GPIOB->ODR &= ~(GPIO_ODR_OD10);
+		GPIOA->ODR |= GPIO_ODR_OD8;
+	}
+	else if(peripheral_num==3){
+		GPIOB->ODR |= GPIO_ODR_OD8;
+		GPIOB->ODR |= GPIO_ODR_OD9;
+		GPIOB->ODR |= GPIO_ODR_OD10;
+		GPIOA->ODR &= ~(GPIO_ODR_OD8);
+	}
+	else{
+		GPIOB->ODR &= ~(GPIO_ODR_OD8);
+		GPIOB->ODR |= GPIO_ODR_OD9;
+		GPIOB->ODR |= GPIO_ODR_OD10;
+		GPIOA->ODR |= GPIO_ODR_OD8;
+	}
+}
+/**
+ * SPI_chip_deselect() - Drives all GPIO/chip select lines High to deselect all
+ * peripherals
+ */
+
+void SPI_chip_deselect()
+{
+	GPIOB->ODR |= GPIO_ODR_OD8;
+	GPIOB->ODR |= GPIO_ODR_OD9;
+	GPIOB->ODR |= GPIO_ODR_OD10;
+	GPIOA->ODR |= GPIO_ODR_OD8;
+
+}
+
+uint16_t SPI_get_Tx_buf(void)
+{
+	return spi_instance->Tx_buf;
+}	
+
+uint16_t SPI_get_Rx_buf(void)
+{
+	return spi_instance->Rx_buf;
 }
 

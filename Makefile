@@ -21,6 +21,7 @@ CFLAGS = -O0 -g -T$(LINKER_SCIRPT) -DSTM32F446xx -DPRINTF_INCLUDE_CONFIG_H -mcpu
 
 # Source files
 SRC_FILES = src/main.c \
+       src/SPI.c \
        lib/UART_driver/src/uart.c \
        lib/printf/printf.c \
        $(SYS_INIT_FILE) \
