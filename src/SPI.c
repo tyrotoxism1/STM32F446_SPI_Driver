@@ -16,6 +16,7 @@ SPI_handle spi_instance = &SPI_instance_storage;
  * Functions/features to add:
  * - SPI_change_mode(), just as an option if user wants to change outside of
  *   init(can't change during communication)
+ * - SPI_send_INT(), interrupt version of send, receive and transieve  
  */ 
 
 /**
@@ -119,6 +120,7 @@ void SPI_CR_setup(uint8_t transfer_speed, uint8_t mode, uint8_t dff)
  * speed)
  *
  * TODO: Enter param info 
+ * Clears TXE of SPI_SR by writing to SPI1_DR
  */ 
 void SPI_init(uint8_t mode, 
 		uint8_t num_peripherals,
@@ -131,17 +133,24 @@ void SPI_init(uint8_t mode,
 	spi_instance->status = WAITING; 
 	spi_instance->error = NO_ERR; 
 	SPI1->CR1 |= SPI_CR1_SPE;
-	//Enable SPI here?
+	spi_instance->Rx_buf = SPI1->DR;
 }
 
 
 /**
  * SPI_deinit() - Disables all chip select lines, waits for TXE then RXNE bits
- * in CR 
+ * in CR then ensures SPI BSY flag is cleared before disabling SPI and finally
+ * reading last sent data. 
  */
 void SPI_deinit()
 {
-	;
+
+	while( !(SPI1->SR & SPI_SR_TXE) );
+	while( (SPI1->SR & SPI_SR_BSY) );
+	SPI_chip_deselect();
+	SPI1->CR1 &= ~(SPI_CR1_SPE);
+	if(SPI1->SR & SPI_SR_RXNE)
+		spi_instance->Rx_buf = SPI1->DR;
 }
 
 /**
@@ -151,23 +160,32 @@ void SPI_deinit()
  * data to SPI1 data register(DR). Data is transferred from Tx to shift 
  * register which is then transmitted to peripheral serially.
  *
- * @data: Value assigned to SPI1 DR. 
+ * @data: Value that will be assigned to SPI1 DR. 
  */
 void SPI_single_send_poll(uint16_t data)
 {
 	while( !(SPI1->SR & SPI_SR_TXE) );
-	SPI1->DR = data;
-	spi_instance->Tx_buf = data; 
+	SPI1->DR = data; 
+	spi_instance->Tx_buf = data;
 }
 
 /**
- * SPI_single_receive_poll() - Poll for Rx buffer being full then store Value
+ * SPI_single_receive_poll() - Polls for Rx buffer being full to store incoming data. 
  *
+ * Doesn't send any SPI data out, is just reading data register for SPI. 
  */
-void SPI_single_receive_poll(void)
+uint16_t SPI_single_receive_poll(void)
 {
 	while( !(SPI1->SR & SPI_SR_RXNE) );
 	spi_instance->Rx_buf = SPI1->DR;
+	return spi_instance->Rx_buf;
+}
+
+
+void SPI_single_transieve_poll(uint16_t data)
+{
+	SPI_single_send_poll(data);
+	SPI_single_receive_poll();
 }
 
 /**
