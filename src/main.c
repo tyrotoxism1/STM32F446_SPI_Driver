@@ -37,12 +37,14 @@ int main(void){
 	SPI_chip_select(0);
 	//Original request for addr 0x01, after next transfer of Rx data should 
 	//yield 0x20h
-	SPI_single_send_poll(MFRC522_addr_helper(0x01, 0));
+	//SPI_single_send_poll(MFRC522_addr_helper(0x02, 0));
+	SPI_single_transieve_poll(MFRC522_addr_helper(0x02,0));
+	
 	//After this send, 0x20h should be in SPI1_DR,
 	//now requesting add 0x11 
-	received_val = SPI_single_receive_poll();
-	SPI_single_send_poll(MFRC522_addr_helper(0xFF, 0));
-	received_val = SPI_single_receive_poll();
+	//SPI_single_send_poll(MFRC522_addr_helper(0xFF, 0));
+	SPI_single_transieve_poll(MFRC522_addr_helper(0xFF, 0));
+	received_val = SPI_get_Rx_buf();
 	printf("\nExpecting 0x80, Actual: %X\n",received_val);
 
 	SPI_deinit();

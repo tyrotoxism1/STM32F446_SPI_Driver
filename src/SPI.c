@@ -92,7 +92,7 @@ int SPI_change_mode(uint8_t mode)
  * Single Master mode, data frame format and Motorola mode.
  *
  * @transfer_speed: Sets "baud rate control"  bits. Value is currently expected
- * to conform to STM32F446 reference manual values specified. 
+ * to conform to STM32F446 reference manual values specified in section 26.7.1
  * @mode: Sets SPI CPOL and CPHA bits in CR1 based on table described in
  * `SPI_change_mode()` 
 * @dff: data frame format, if dff==0, 8 bit frame, otherwise 16 bit frame.
@@ -119,8 +119,15 @@ void SPI_CR_setup(uint8_t transfer_speed, uint8_t mode, uint8_t dff)
  * peripherals, data frame formate of 8 or 16 and SPI SCLK speed(transfer
  * speed)
  *
- * TODO: Enter param info 
- * Clears TXE of SPI_SR by writing to SPI1_DR
+ * @mode: Configures CPOL and CPHA of SPI control register. More mode
+ * information described in `SPI_change_mode()`
+ * @num_peripherals: Value from 1-4 that determines chip select lines
+ * configured. Uses GPIO for softare controlled NSS, see `SPI_GPIO_setup()` for
+ * more details
+ * @data_frame_format: configures SPI1 for 8 or 16 bit data frames, #0==8dff
+ * otherwise 16dff 
+ * @transfer_speed: Sets "baud rate control"  bits. Value is currently expected
+ * to conform to STM32F446 reference manual values specified in section 26.7.1
  */ 
 void SPI_init(uint8_t mode, 
 		uint8_t num_peripherals,
@@ -133,7 +140,6 @@ void SPI_init(uint8_t mode,
 	spi_instance->status = WAITING; 
 	spi_instance->error = NO_ERR; 
 	SPI1->CR1 |= SPI_CR1_SPE;
-	spi_instance->Rx_buf = SPI1->DR;
 }
 
 
