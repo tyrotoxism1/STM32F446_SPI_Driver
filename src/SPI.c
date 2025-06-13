@@ -1,5 +1,6 @@
 #include "SPI.h"
 #include "stm32f446xx.h"
+#include "stm32f4xx.h"
 #include <stdint.h>
 
 struct SPI_t{
@@ -257,3 +258,16 @@ uint16_t SPI_get_Rx_buf(void)
 	return spi_instance->Rx_buf;
 }
 
+void SPI_enable(){
+	SPI1->CR1 |= SPI_CR1_SPE;
+	spi_instance->status = WAITING;
+}
+
+void SPI_disable(){
+	SPI1->CR1 &= ~(SPI_CR1_SPE);
+	spi_instance->status = DISBALED;
+}
+
+SPI_STATUS SPI_get_status(void){
+	return spi_instance->status;
+}

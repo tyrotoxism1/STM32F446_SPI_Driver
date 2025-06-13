@@ -7,6 +7,7 @@ typedef struct SPI_t SPI_t;
 typedef SPI_t* SPI_handle;
 
 typedef enum SPI_STATUS_enum{
+	DISBALED,
 	WAITING,
 	BUSY,
 	SPI_ERROR,
@@ -30,8 +31,11 @@ uint16_t SPI_single_receive_poll(void);
 void SPI_single_transieve_poll(uint16_t data);
 void SPI_chip_select(uint8_t peripheral_num);
 void SPI_chip_deselect();
+void SPI_enable();
+void SPI_disable();
 
 uint16_t SPI_get_Rx_buf(void);
 uint16_t SPI_get_Tx_buf(void);
+SPI_STATUS SPI_get_status(void);
 
 #endif //STM32F4_SPI_H
