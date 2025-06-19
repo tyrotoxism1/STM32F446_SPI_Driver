@@ -13,6 +13,12 @@ typedef enum SPI_STATUS_enum{
 	SPI_ERROR,
 } SPI_STATUS;
 
+typedef enum SPI_RW_enum{
+	READ,
+	WRITE,
+} SPI_RW;
+
+
 typedef enum SPI_ERROR_enum{
 	NO_ERR,
 	SEND_ERR,
