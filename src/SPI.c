@@ -265,7 +265,7 @@ void SPI_enable(){
 
 void SPI_disable(){
 	SPI1->CR1 &= ~(SPI_CR1_SPE);
-	spi_instance->status = DISBALED;
+	spi_instance->status = DISABLED;
 }
 
 SPI_STATUS SPI_get_status(void){
