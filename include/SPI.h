@@ -7,7 +7,7 @@ typedef struct SPI_t SPI_t;
 typedef SPI_t* SPI_handle;
 
 typedef enum SPI_STATUS_enum{
-	DISBALED,
+	DISABLED,
 	WAITING,
 	BUSY,
 	SPI_ERROR,
